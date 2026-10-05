@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ .title }}</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="stylesheet" href="/assets/css/app-extra.css">
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="brand">
+            <img class="brand-icon" src="/assets/logo.png" alt="Stellar Scholars logo" style="width:100px;">
+            <div>
+                <h1>Earth System Trend Detection Dashboard</h1>
+                <p>Explore how our planet changes over time</p>
+            </div>
+        </div>
+        <div class="status">
+            <span class="status-dot"></span>
+            Sourced from NASA
+        </div>
+    </header>
+
+    <main class="workspace">
+
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar">
+
+            <section class="panel-section">
+                <h2>Layers</h2>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="layer-satellite" checked>
+                        <span>Satellite imagery</span>
+                    </label>
+                    <select id="imagery-source" class="mini-select" aria-label="Satellite imagery source">
+                        <option value="MODIS_Terra_CorrectedReflectance_TrueColor">MODIS Terra true color</option>
+                        <option value="MODIS_Aqua_CorrectedReflectance_TrueColor">MODIS Aqua true color</option>
+                        <option value="VIIRS_SNPP_CorrectedReflectance_TrueColor">VIIRS Suomi NPP true color</option>
+                    </select>
+                    <div class="layer-status" data-status="imagery"></div>
+                </div>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="layer-vegetation" checked>
+                        <span>Vegetation / NDVI</span>
+                    </label>
+                    <div class="layer-status" data-status="vegetation"></div>
+                </div>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="layer-temperature">
+                        <span>Land surface temperature</span>
+                    </label>
+                    <div class="layer-status" data-status="temperature"></div>
+                </div>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="layer-fires">
+                        <span>Fires</span>
+                    </label>
+                    <div class="layer-status" data-status="fires"></div>
+                </div>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="layer-events">
+                        <span>Natural events</span>
+                    </label>
+                    <div class="layer-status" data-status="events"></div>
+                </div>
+            </section>
+
+            <section class="panel-section">
+                <h2>Reference</h2>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="ref-boundaries" checked>
+                        <span>Country Boundaries</span>
+                    </label>
+                    <div class="layer-status" data-status="boundaries"></div>
+                </div>
+
+                <div class="layer-row">
+                    <label class="layer-option">
+                        <input type="checkbox" id="ref-labels" checked>
+                        <span>Country Labels</span>
+                    </label>
+                    <div class="layer-status" data-status="labels"></div>
+                </div>
+            </section>
+
+            <section class="panel-section">
+                <h2>Explore</h2>
+                <button id="locate-btn" class="control-button">Your Location</button>
+                <button id="reset-btn" class="control-button">Reset Globe</button>
+            </section>
+
+            <section class="panel-section">
+                <h2>Selected area</h2>
+                <div id="selected-area" class="selected-area">
+                    <span>No area selected</span>
+                </div>
+            </section>
+
+        </aside>
+
+        <!-- MAP -->
+        <section class="map-container">
+
+            <div id="map"></div>
+
+            <div class="map-overlay top-left">
+                <div class="coordinates">
+                    <span id="latitude">Lat: 0.00°</span>
+                    <span id="longitude">Lon: 0.00°</span>
+                </div>
+            </div>
+
+            <div id="zoom-note" class="zoom-note" hidden></div>
+
+            <!-- REGIONAL TEMPERATURE HISTORY (shown with the temperature layer) -->
+            <div id="temp-chart" class="temp-chart" hidden>
+                <div class="tc-head">
+                    <strong>Regional temperature history</strong>
+                    <button id="tc-close" aria-label="Hide chart">×</button>
+                </div>
+                <div id="tc-sub" class="tc-sub"></div>
+                <div id="tc-body" class="tc-body"></div>
+                <div id="tc-readout" class="tc-readout"></div>
+                <div class="tc-note">NASA POWER monthly values (MERRA-2 model), averaged over sample points in the current view. Modeled data, not the MODIS pixels shown on the map. Thin line = monthly, thick = 12-month average.</div>
+            </div>
+
+            <!-- TIME CONTROL -->
+            <div class="timeline">
+
+                <div class="timeline-header">
+                    <span>TIME</span>
+                    <strong id="date-display">Today</strong>
+                </div>
+
+                <div class="timeline-controls">
+                    <button id="date-prev" class="tl-btn" aria-label="Previous day">◀</button>
+                    <input id="date-input" type="date" aria-label="Select date">
+                    <button id="date-next" class="tl-btn" aria-label="Next day">▶</button>
+                    <button id="date-latest" class="tl-btn">Latest</button>
+                </div>
+
+                <input id="time-slider" type="range" min="0" max="100" value="100">
+
+                <div id="timeline-labels" class="timeline-ticks"></div>
+
+                <div id="timeline-layer-dates" class="timeline-layer-dates"></div>
+            </div>
+
+            <!-- AI BUTTON -->
+            <button id="ai-button" class="ai-button">
+                
+                Ask Earth Detrctive AI
+            </button>
+
+        </section>
+
+    </main>
+
+    <!-- AI PANEL -->
+    <aside id="ai-panel" class="ai-panel" aria-hidden="true">
+
+        <div class="ai-header">
+            <div>
+                <strong>Earth Detective AI</strong>
+                <span>NASA data assistant</span>
+            </div>
+            <button id="close-ai" aria-label="Close AI panel">×</button>
+        </div>
+
+        <div id="ai-context" class="ai-context"></div>
+
+        <div id="chat-messages" class="chat-messages" aria-live="polite">
+            <div class="message ai-message">Hi! I'm your Earth System Detective assistant. Select an area and ask me what changed, why it changed, or what NASA data tells us about it.</div>
+        </div>
+
+        <div class="chat-input">
+            <textarea
+                id="question-input"
+                rows="1"
+                placeholder="Why did this area change?"
+            ></textarea>
+            <button id="send-question" aria-label="Send message">↑</button>
+        </div>
+
+    </aside>
+
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="/assets/js/app.js"></script>
+
+</body>
+</html>
